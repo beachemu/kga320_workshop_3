@@ -1,0 +1,163 @@
+---
+title: "Observations III"
+author: "KGA320: Our Changing Climate"
+date: "Semester 2 2024"
+output: 
+  learnr::tutorial:
+    theme: lumen
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+# Setup R environment
+library(tidyverse) # Includes ggplot2 and dplyr.
+library(learnr)
+library(zoo)
+
+fix <- function(df) {
+  df <- separate(df, time, c('year', 'month', 'day'), sep = "-",remove = FALSE) # Splits date into columns for year, month, and day.
+  df$year <- as.numeric(df$year) # Make sure R treats year as a number
+  df$month <- as.numeric(df$month) # Make sure R treats year as a number
+  df$day <- as.numeric(df$day) # Make sure R treats year as a number
+  return(df)
+}
+
+barossa_data <- read.csv("data/barossa_1951-2014.csv") %>% fix()
+
+# Observational data
+north_data <- read.csv("data/monsoonal_north_burdekin_1951-2014.csv") %>% fix()
+eastcoast_data <- read.csv("data/east_coast_north_coast_1951-2014.csv") %>% fix()
+murray_data <- read.csv("data/murray_basin_riverina_1951-2014.csv") %>% fix()
+tas_data <- read.csv("data/southern_slopes_south_1951-2014.csv") %>% fix()
+
+# Drought data
+north_paleo <- read.csv("data/monsoonal_north_burdekin_drought_1400-2012.csv") %>% fix()
+eastcoast_paleo <- read.csv("data/east_coast_north_coast_drought_1400-2012.csv") %>% fix()
+murray_paleo <- read.csv("data/murray_basin_riverina_drought_1400-2012.csv") %>% fix()
+tas_paleo <- read.csv("data/southern_slopes_south_drought_1400-2012.csv") %>% fix()
+
+# Future data
+north_ssp126_2030 <- read.csv("data/monsoonal_north_burdekin_ssp126_2030-2049.csv") %>% fix()
+north_ssp126_2060 <- read.csv("data/monsoonal_north_burdekin_ssp126_2060-2079.csv") %>% fix()
+north_ssp370_2030 <- read.csv("data/monsoonal_north_burdekin_ssp370_2030-2049.csv") %>% fix()
+north_ssp370_2060 <- read.csv("data/monsoonal_north_burdekin_ssp370_2060-2079.csv") %>% fix()
+eastcoast_ssp126_2030 <- read.csv("data/east_coast_north_coast_ssp126_2030-2049.csv") %>% fix()
+eastcoast_ssp126_2060 <- read.csv("data/east_coast_north_coast_ssp126_2060-2079.csv") %>% fix()
+eastcoast_ssp370_2030 <- read.csv("data/east_coast_north_coast_ssp370_2030-2049.csv") %>% fix()
+eastcoast_ssp370_2060 <- read.csv("data/east_coast_north_coast_ssp370_2060-2079.csv") %>% fix()
+murray_ssp126_2030 <- read.csv("data/murray_basin_riverina_ssp126_2030-2049.csv") %>% fix()
+murray_ssp126_2060 <- read.csv("data/murray_basin_riverina_ssp126_2060-2079.csv") %>% fix()
+murray_ssp370_2030 <- read.csv("data/murray_basin_riverina_ssp370_2030-2049.csv") %>% fix()
+murray_ssp370_2060 <- read.csv("data/murray_basin_riverina_ssp370_2060-2079.csv") %>% fix()
+tas_ssp126_2030 <- read.csv("data/southern_slopes_south_ssp126_2030-2049.csv") %>% fix()
+tas_ssp126_2060 <- read.csv("data/southern_slopes_south_ssp126_2060-2079.csv") %>% fix()
+tas_ssp370_2030 <- read.csv("data/southern_slopes_south_ssp370_2030-2049.csv") %>% fix()
+tas_ssp370_2060 <- read.csv("data/southern_slopes_south_ssp370_2060-2079.csv") %>% fix()
+```
+
+
+## Introduction: Moving Back in Time
+
+Welcome to workshop 3! Great job making it this far. This week will be short on content, covering new concepts briefly, giving you time to catch up and focus on **Assessment Portfolio Task A**. We are finally ready for trend analysis! But first, a recap.
+
+### Recap of last week
+
+In [workshop 2](https://kga320-utas.shinyapps.io/workshop_2/), we covered the tools used to make data work for us:
+
+- **Data Preparation**: Using functions like `cut` and those provided in dplyr to simplify high-resolution data.
+- **Comparative Analysis**: Plotting different time periods, and comparing them with t-tests.
+- **Correlation**: Calculating correlation between variables with `cor` and visualising them with scatter plots.
+- **Advanced Visualisations**: Using `geom_smooth` to visualise trends in a time series.
+
+This is a great week to catch up on the first two workshops if you need to. Using dplyr will be core to trend analysis in this workshop! We'll first load in the data needed, including extra data sets you will analyse in the exercises:
+
+```{r}
+# Setup R Environment.
+```
+
+### Linear models
+
+**Linear regression** is a powerful statistical tool with a simple premise. Consider a scatter plot of temperature over time. Linear regression will draw a straight line through that scatter plot that best follows the general trend of the scattered points. In this case, time is an **independent response variable** that explains a variation in the **dependent explanatory variable**, temperature. With these two variables, we have constructed a **linear model**.
+
+We've already seen this with `geom_smooth`, but linear regression extends beyond just the drawn line. A complete model can incorporate many independent variables and comes with statistics that help to determine how useful the regression is in explaining real-world phenomena. If you were doing an undergraduate in statistics, you would spend semesters exploring everything that can be done with linear regression. We only have a few workshops, so we'll keep it simple!
+
+In R, linear models are built using the function `lm`. Let's use dplyr to build a data frame with yearly averages for its variables and build a linear model where precipitation is the response variable, and year, and average maximum daily temperature are the explanatory variables. We will then print the details for this linear model with the function `summary`.
+
+```{r}
+# Construct a linear model using lm.
+
+# Examine the constructed model using summary.
+```
+
+The output is complicated, and we don't need all of it. Here are the key values to inform your analysis:
+
+1. **Coefficients**: This table gives the strength of the relationship between precipitation and explanatory variables under the estimate column and the t-test results for that relationship under `Pr(>|t|)`.
+2. **Multiple R-Squared**: This value gives a percentage value associated with how much the scattered data points fit tightly around the constructed lines of our linear model.
+3. **p-value**: An overall measure of statistical significance for the model.
+
+This model isn't perfect. Remember last week how we used `cor` to measure correlations between variables? We know that temperature and time are correlated, and we use both in the model above. This goes against some assumptions built into linear regression and can make interpretations messy. 
+
+In your analysis, consider the relationships you want to consider and how you will show them. Should you construct separate linear models for different variables? Or use multiple variables in a model? Or calculate new variables combining those provided? There are many ways to go about this, and no approach is necessarily better, so go with what makes sense to you!
+
+### Long-term trend analysis
+
+We've covered a few methods to better account for a longer-term change rather than day-to-day variability. One final method we will cover is a **rolling mean**. A rolling mean for temperature for a given year is the average of the temperature over a long time period extending past just the year. This is a key measure in climate science. [For example, targets for global warming are based on the rolling mean](https://www.bbc.com/future/article/20231130-climate-crisis-the-15c-global-warming-threshold-explained). 
+
+Calculating the rolling mean in R is very easy, and all the methods we have provided for time series work just the same:
+
+```{r}
+# Calculate the rolling mean of precipitation in the Barossa Valley.
+
+# Plot the rolling mean for precipitation.
+```
+
+## Workshop: Paleoclimatology
+
+### Summary of introduction
+
+This week, there are only a few new concepts to cover; it's time to focus on writing a report!
+
+- **Linear Regression**: We can analyse trends by constructing linear models. We do this in R with the `lm` and `summary` functions.
+- **Rolling Means**: Long-term trends can be represented by considering means taken over wide time periods. This can be done in R with the `rollmean` function.
+
+### Exercises
+
+This week, we will jump straight into coding. This should give you time to catch up and make plots for your portfolio!
+
+> 🔥 **Important:** You cannot save your work on this webpage. If you create something you want to keep, save it to your computer!
+
+> 📊 **Assessment Portfolio Task A**: You have just over a week to complete the first part of your portfolio for these workshops. Use the time you have to compile your findings. 
+
+#### Integrating paleoclimatology
+
+We have included an extra dataset in this workshop that you can use to find long-term trends in climate based on paleoclimatology. You have the tools now to analyse data frames. Use everything we've learned over the past three workshops to examine the past data in your region for any trends.
+
+You may want to try:
+
+- Exploring the general structure of the data set with `str`.
+- Create violin or boxplots of the data for different time periods. 
+- Use `lm` and relevant plots to show trends over time. 
+- Compare the overlap period between this data set and the observational period.
+
+```{r}
+# Plot drought index.
+```
+
+#### Creating linear models
+
+Now, it's time to build linear models of your data. Below, use `lm` and `summary` to conduct linear regression on your time series. Remember to use dplyr and make rolling means to simplify your data for better analysis! Make plots to show linear relationships that you find to be relevant, and make notes for your portfolio.
+
+```{r}
+# Process your data using dplyr and rollmean
+
+
+# Use lm and summary to analyse climate trends over time.
+
+
+# Plot any relevant trends found in your linear models. geom_smooth is good for this!
+
+
+```
+
+### Conclusion
+Finishing this workshop marks the halfway point for the workshops focussing on R. Congratulations on making it this far! Next week we will begin looking to future climates, but for now, take the time to polish your work for **Assessment Portfolio Task A**. Give yourself a pat on the back; these first three weeks are the heaviest for learning to use R. For the next three workshops we will mostly apply what you have learnt!
