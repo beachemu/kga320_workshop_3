@@ -71,8 +71,35 @@ In [workshop 2](https://kga320-utas.shinyapps.io/workshop_2/), we covered the to
 
 This is a great week to catch up on the first two workshops if you need to. Using dplyr will be core to trend analysis in this workshop! We'll first load in the data needed, including extra data sets you will analyse in the exercises:
 
-```{r}
+```{r start, exercise=TRUE}
 # Setup R Environment.
+
+library(tidyverse) # Includes ggplot2 and dplyr.
+library(learnr)
+library(zoo)
+
+fix <- function(df) {
+  df <- separate(df, time, c('year', 'month', 'day'), sep = "-",remove = FALSE) # Splits date into columns for year, month, and day.
+  df$year <- as.numeric(df$year) # Make sure R treats year as a number
+  df$month <- as.numeric(df$month) # Make sure R treats year as a number
+  df$day <- as.numeric(df$day) # Make sure R treats year as a number
+  return(df)
+}
+
+barossa_data <- read.csv("data/barossa_1951-2014.csv") %>% fix()
+
+# Observational data
+north_data <- read.csv("data/monsoonal_north_burdekin_1951-2014.csv") %>% fix()
+eastcoast_data <- read.csv("data/east_coast_north_coast_1951-2014.csv") %>% fix()
+murray_data <- read.csv("data/murray_basin_riverina_1951-2014.csv") %>% fix()
+tas_data <- read.csv("data/southern_slopes_south_1951-2014.csv") %>% fix()
+
+# Drought data
+north_paleo <- read.csv("data/monsoonal_north_burdekin_drought_1400-2012.csv") %>% fix()
+eastcoast_paleo <- read.csv("data/east_coast_north_coast_drought_1400-2012.csv") %>% fix()
+murray_paleo <- read.csv("data/murray_basin_riverina_drought_1400-2012.csv") %>% fix()
+tas_paleo <- read.csv("data/southern_slopes_south_drought_1400-2012.csv") %>% fix()
+
 ```
 
 ### Linear models
@@ -81,23 +108,35 @@ This is a great week to catch up on the first two workshops if you need to. Usin
 
 We've already seen this with `geom_smooth`, but linear regression extends beyond just the drawn line. A complete model can incorporate many independent variables and comes with statistics that help to determine how useful the regression is in explaining real-world phenomena. If you were doing an undergraduate in statistics, you would spend semesters exploring everything that can be done with linear regression. We only have a few workshops, so we'll keep it simple!
 
-In R, linear models are built using the function `lm`. Let's use dplyr to build a data frame with yearly averages for its variables and build a linear model where precipitation is the response variable, and year, and average maximum daily temperature are the explanatory variables. We will then print the details for this linear model with the function `summary`.
+In R, linear models are built using the function `lm`. Let's use dplyr to build a data frame with yearly averages for its variables and build a linear model where precipitation is the response variable, while year and average maximum daily temperature are the explanatory variables. We will then print the details for this linear model with the function `summary`.
 
-```{r}
+```{r lm, exercise=TRUE}
+# Create a yearly average data frame.
+barossa_yearly <- barossa_data %>%
+  group_by(year) %>%
+  summarise(
+    mean_tasmax = mean(tasmax),
+    mean_tasmin = mean(tasmin),
+    mean_pr = mean(pr)
+  )
+
+
 # Construct a linear model using lm.
+model <- lm(mean_pr ~ year + mean_tasmax, data = barossa_yearly)
 
 # Examine the constructed model using summary.
+summary(model)
 ```
 
-The output is complicated, and we don't need all of it. Here are the key values to inform your analysis:
+We can see we define the model in `lm` with a form that looks like `response_variable ~ explanatory_variable_1 + explanatory_variable_2`. The output of `summary(model)` is complicated, and we don't need all of it. Here are the key values to inform your analysis:
 
-1. **Coefficients**: This table gives the strength of the relationship between precipitation and explanatory variables under the estimate column and the t-test results for that relationship under `Pr(>|t|)`.
-2. **Multiple R-Squared**: This value gives a percentage value associated with how much the scattered data points fit tightly around the constructed lines of our linear model.
-3. **p-value**: An overall measure of statistical significance for the model.
+1. **Coefficients**: This table gives the strength of the relationship between precipitation and explanatory variables under the estimate column and the t-test results for that relationship under `Pr(>|t|)`. The stars next to each row are a good quick indicator of significance. We can see that the `year` has a statistically significant relationship in this model, but the coefficient is quite small at 0.004818. `mean_tasmax` is more significant, and shows a stronger negative correlation.
+2. **Multiple R-Squared**: This value gives a percentage value associated with how much the scattered data points fit tightly around the constructed lines of our linear model. This model has an R-squared of 0.5295, so about 53% of the variability in mean precipitation for a year can be explained by the mean max temperature for the year, and the year itself. As long as the R-squared isn't very low, the model should be OK, so this value is fine.
+3. **p-value**: An overall measure of statistical significance for the model. It is very small for this model, so there is some statistical significance to the relationships we are examining.
 
-This model isn't perfect. Remember last week how we used `cor` to measure correlations between variables? We know that temperature and time are correlated, and we use both in the model above. This goes against some assumptions built into linear regression and can make interpretations messy. 
+This model isn't perfect. Remember last week how we used `cor` to measure correlations between variables? We know that temperature and time are correlated, and we use both in the model above. This goes against some assumptions built into linear regression and can make interpretations messy. Try removing `year` and `mean_tasmax` from the model and see what happens to see how things can get messy!
 
-In your analysis, consider the relationships you want to consider and how you will show them. Should you construct separate linear models for different variables? Or use multiple variables in a model? Or calculate new variables combining those provided? There are many ways to go about this, and no approach is necessarily better, so go with what makes sense to you!
+In your analysis, consider the relationships you want to consider and how you will show them. Should you construct separate linear models for different variables? Or use multiple variables in a model? Or calculate new variables combining those provided? There are many ways to go about this, and no approach is necessarily better, so go with what makes sense to you! The goal for now is to be able to explain the choices you make, and to match your models to visualisations that can show your findings.
 
 ### Long-term trend analysis
 
@@ -105,11 +144,20 @@ We've covered a few methods to better account for a longer-term change rather th
 
 Calculating the rolling mean in R is very easy, and all the methods we have provided for time series work just the same:
 
-```{r}
+```{r rolling, exercise=TRUE, exercise.setup="lm"}
 # Calculate the rolling mean of precipitation in the Barossa Valley.
+barossa_yearly$rolling_mean_pr <- rollmean(barossa_yearly$mean_pr, k = 10, fill = NA)
 
 # Plot the rolling mean for precipitation.
+ggplot(barossa_yearly, aes(x = year, y = rolling_mean_pr)) +
+  geom_point() + 
+  geom_line() +
+  ggtitle("10-year average precipitation 1950s to 2010s") +
+  xlab("Year") + ylab("Precipitation (mm)") + 
+  theme_minimal()
 ```
+
+Try changing to the yearly `mean_pr`. Notice how the rolling mean gives a plot that is "smoother", it is easier to see any long term trends that may be ocurring over long time spans.
 
 ## Workshop: Paleoclimatology
 
@@ -139,7 +187,7 @@ You may want to try:
 - Use `lm` and relevant plots to show trends over time. 
 - Compare the overlap period between this data set and the observational period.
 
-```{r}
+```{r ex-drought, exercise=TRUE}
 # Plot drought index.
 ```
 
@@ -147,7 +195,7 @@ You may want to try:
 
 Now, it's time to build linear models of your data. Below, use `lm` and `summary` to conduct linear regression on your time series. Remember to use dplyr and make rolling means to simplify your data for better analysis! Make plots to show linear relationships that you find to be relevant, and make notes for your portfolio.
 
-```{r}
+```{r ex-lm, exercise=TRUE}
 # Process your data using dplyr and rollmean
 
 
